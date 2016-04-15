@@ -103,6 +103,80 @@ count_trees_test() ->
   %% should pass Wallapop test case
   ?assertEqual(3, CalculateForestTreesCount(wallapop_forest_spec())).
 
+is_tree_test_() ->
+  Node = #node{},
+  Forest = magic_forest:new({2, []}),
+
+  {foreach,
+    fun() -> meck:new(magic_forest, [passthrough]) end,
+    fun(_) -> meck:unload(magic_forest) end,
+    [
+      {"when node is root and is branch", fun() ->
+        meck:expect(magic_forest, is_root, fun(_) -> true end),
+        meck:expect(magic_forest, is_branch, fun(_, _) -> true end),
+        ?assertEqual(true, magic_forest:is_tree(Node, Forest)),
+        ?assert(meck:validate(magic_forest))
+      end},
+      {"when node is root and is not branch", fun() ->
+        meck:expect(magic_forest, is_root, fun(_) -> true end),
+        meck:expect(magic_forest, is_branch, fun(_, _) -> false end),
+        ?assertEqual(false, magic_forest:is_tree(Node, Forest)),
+        ?assert(meck:validate(magic_forest))
+      end},
+      {"when node is not root and is branch", fun() ->
+        meck:expect(magic_forest, is_root, fun(_) -> false end),
+        meck:expect(magic_forest, is_branch, fun(_, _) -> true end),
+        ?assertEqual(false, magic_forest:is_tree(Node, Forest)),
+        ?assert(meck:validate(magic_forest))
+      end},
+      {"when node is not root and is not branch", fun() ->
+        meck:expect(magic_forest, is_root, fun(_) -> false end),
+        meck:expect(magic_forest, is_branch, fun(_, _) -> false end),
+        ?assertEqual(false, magic_forest:is_tree(Node, Forest)),
+        ?assert(meck:validate(magic_forest))
+      end}
+    ]
+  }.
+
+is_root_test() ->
+  ?assertEqual(true, magic_forest:is_root(#node{parents = []})),
+  ?assertEqual(false, magic_forest:is_root(#node{parents = [1]})).
+
+is_branch_test() ->
+  Forest = magic_forest:new({12, [
+    {1, 2},
+
+    {3, 4},
+    {4, 5},
+    {4, 6},
+
+    {7, 8},
+    {8, 10},
+    {9, 10},
+    {10, 11}
+  ]}),
+
+  %% should return true if node without edges
+  ?assertEqual(true, magic_forest:is_branch(magic_forest:node(0, Forest), Forest)),
+
+  %% should return true if node has no parents
+  ?assertEqual(true, magic_forest:is_branch(magic_forest:node(1, Forest), Forest)),
+
+  %% should return true if node has many children
+  ?assertEqual(true, magic_forest:is_branch(magic_forest:node(4, Forest), Forest)),
+
+  %% should return true if node has many nested children
+  ?assertEqual(true, magic_forest:is_branch(magic_forest:node(3, Forest), Forest)),
+
+  %% should return false if node has many parents
+  ?assertEqual(false, magic_forest:is_branch(magic_forest:node(10, Forest), Forest)),
+
+  %% should return false if node child is not branch
+  ?assertEqual(false, magic_forest:is_branch(magic_forest:node(7, Forest), Forest)),
+
+  %% should test for branch downward only
+  ?assertEqual(false, magic_forest:is_branch(magic_forest:node(10, Forest), Forest)).
+
 %% ---------------------------------------------------------------
 %% Helper functions
 %% ---------------------------------------------------------------

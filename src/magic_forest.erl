@@ -16,6 +16,10 @@
   count_trees/1
 ]).
 
+-ifdef(TEST).
+-compile(export_all).
+-endif.
+
 %% ---------------------------------------------------------------
 %% Public functions
 %% ---------------------------------------------------------------
@@ -42,7 +46,7 @@ node(Id, Forest) ->
 -spec trees(Forest :: forest()) -> list(forest_node()).
 trees(Forest) ->
   orddict:fold(fun(_NodeId, Node, Acc) ->
-    case is_tree(Node, Forest) of
+    case magic_forest:is_tree(Node, Forest) of
       true -> [Node | Acc];
       false -> Acc
     end
@@ -50,7 +54,7 @@ trees(Forest) ->
 
 -spec count_trees(Forest :: forest()) -> non_neg_integer().
 count_trees(Forest) ->
-  length(trees(Forest)).
+  length(magic_forest:trees(Forest)).
 
 %% ---------------------------------------------------------------
 %% Private functions
@@ -58,7 +62,7 @@ count_trees(Forest) ->
 
 -spec is_tree(Node :: forest_node(), Forest :: forest()) -> boolean().
 is_tree(Node = #node{}, Forest) ->
-  is_root(Node) and is_branch(Node, Forest).
+  magic_forest:is_root(Node) and magic_forest:is_branch(Node, Forest).
 
 -spec is_root(Node :: forest_node()) -> boolean().
 is_root(#node{parents = []}) ->
@@ -72,6 +76,6 @@ is_branch(#node{parents = Parents}, _Forest) when length(Parents) > 1 ->
 is_branch(#node{children = Children}, Forest) ->
   lists:dropwhile(fun(ChildId) ->
     ChildNode = node(ChildId, Forest),
-    is_branch(ChildNode, Forest)
+    magic_forest:is_branch(ChildNode, Forest)
   end, Children) =:= [].
 
